@@ -18,7 +18,8 @@ module.exports = app => {
     router.post("/readNotification", Package.readNotification);
     router.post("/updatePackageDocumentStatus", Package.updatePackageDocumentStatus);
     router.get("/getPackageCommand", Package.getPackageCommand);
-    router.get("/getPackageStep", Package.getPackageStep)
+    router.get("/getPackageStep", Package.getPackageStep);
+    router.get("/getPackageStepById",Package.getPackageStepById)
 
     app.use("/api/Package", router);
 };

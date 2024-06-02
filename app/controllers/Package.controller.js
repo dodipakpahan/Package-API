@@ -794,3 +794,40 @@ exports.getPackageStep = async (req, res) => {
     }
 };
 
+
+exports.getPackageStepById = async (req, res) => {
+    try {
+        const stepId = req.query.id;
+        const token = req.header("token");
+        const authResult = await helper.authenticateJWT(token);
+        if (authResult.authenticated) {
+            const results = await db.sequelize.query(
+                `Select 
+                packageStep.*,
+                package.package_name,
+                listStep.step_name,
+                listStep.order_number,
+                status.status_name,
+                package.package_step
+                FROM package.trx_package_step packageStep
+                INNER JOIN package.ref_package package on packageStep.package_id = package.id
+                INNER JOIN package.ref_list_step_master listStep on packageStep.step_id = listStep.id
+                INNER JOIN package.ref_step_status status on packageStep.step_status_id = status.id
+                where packageStep.id = '${stepId}'
+                ORDER BY listStep.order_number ASC`,
+                { type: db.sequelize.QueryTypes.SELECT });
+
+            if (results) {
+                res.send(helper.createResponseWrapper(results, 0));
+            } else {
+                res.send(helper.createResponseWrapper([], 0, 2, "Invalid input parameters"));
+            }
+        } else {
+            res.send(helper.createResponseWrapper([], 1, 98, "Authentication failed."));
+        }
+    }
+    catch (exception) {
+        console.log(exception);
+        res.send(helper.createResponseWrapper([], 1, 99, "An error has occurred, please contact system administrator."));
+    }
+};
