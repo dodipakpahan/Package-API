@@ -14,11 +14,11 @@ module.exports = (sequelize, Sequelize) => {
     },
     start_date: {
       type: DataTypes.DATE,
-      allowNull: false
+      allowNull: true
     },
     end_date: {
       type: DataTypes.DATE,
-      allowNull: false
+      allowNull: true
     },
     upload_document: {
       type: DataTypes.TEXT,
@@ -32,7 +32,7 @@ module.exports = (sequelize, Sequelize) => {
     updated_date: {
       type: DataTypes.DATE,
       defaultValue: Sequelize.NOW,
-      allowNull: false
+      allowNull: true
     },
     created_by: {
       type: DataTypes.UUID,
@@ -57,6 +57,46 @@ module.exports = (sequelize, Sequelize) => {
         defaultValue:0
     },
     selection_methode:{
+      type: DataTypes.TEXT,
+      allowNull:true
+    },
+    pagu:{
+      type: DataTypes.BIGINT,
+      allowNull: true
+    },
+    hps:{
+      type: DataTypes.BIGINT,
+      allowNull: true
+    },
+    kontrak:{
+      type: DataTypes.BIGINT,
+      allowNull: true
+    },
+    ppk_name:{
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    provider_name:{
+      type: DataTypes.UUID,
+      allowNull: true
+    },
+    planing_consultant:{
+      type: DataTypes.TEXT,
+      allowNull:true
+    },
+    supervising_consultant:{
+      type: DataTypes.TEXT,
+      allowNull:true
+    },
+    contract_number:{
+      type: DataTypes.TEXT,
+      allowNull:true
+    },
+    document_status:{
+      type: DataTypes.TEXT,
+      allowNull:true
+    },
+    command:{
       type: DataTypes.TEXT,
       allowNull:true
     }

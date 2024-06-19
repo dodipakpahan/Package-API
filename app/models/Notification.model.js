@@ -41,6 +41,9 @@ module.exports = (sequelize, Sequelize) => {
     document_id:{
       type: DataTypes.UUID,
       allowNull:true
+    },
+    path:{
+      type:DataTypes.TEXT
     }
     
 

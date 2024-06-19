@@ -5,6 +5,7 @@ const fs = require("fs");
 const Op = db.Sequelize.Op;
 const helper = require("../helper/ApplicationHelper");
 const { Sequelize } = require("sequelize");
+const moment = require("moment");
 
 
 const winston = require('winston');
@@ -26,7 +27,7 @@ exports.insertUpdate = async (req, res) => {
         let requests = req.body;
         let token = req.header("token");
         let authResult = await helper.authenticateJWT(token);
-      
+
         if (authResult.authenticated) {
             let currentDateTime = new Date();
             if (requests.id === 0) {
@@ -40,11 +41,12 @@ exports.insertUpdate = async (req, res) => {
                     updated_by: authResult.token_data.user_account_id,
                     is_active: true,
                     user_role: requests.user_role,
+                    name: requests.name
                 },
                     {
                         fields: ["username", "password", "email",
-                            "created_date",  "created_by", 
-                            "is_active",  "user_role"]
+                            "created_date", "created_by",
+                            "is_active", "user_role", "name"]
                     });
 
                 // console.log(user);
@@ -56,7 +58,9 @@ exports.insertUpdate = async (req, res) => {
                     updated_date: currentDateTime,
                     updated_by: authResult.token_data.user_account_id,
                     is_active: requests.is_active,
-                    user_role: requests.user_role,                },
+                    user_role: requests.user_role,
+                    name: requests.name
+                },
                     {
                         where: {
                             id: requests.id
@@ -64,7 +68,7 @@ exports.insertUpdate = async (req, res) => {
                         }
                     });
 
-         
+
                 res.send(helper.createResponseWrapper([], 0));
             }
 
@@ -77,6 +81,210 @@ exports.insertUpdate = async (req, res) => {
         res.send(helper.createResponseWrapper([], 1, 99, "An error has occurred, please contact system administrator."));
     }
 };
+
+
+exports.findAll = async (req, res) => {
+    try {
+        const offset = req.query.offset;
+        const limit = req.query.limit;
+        const orderBy = req.query.order_by;
+        const sortDescending = req.query.descending;
+        const token = req.header("token");
+        const authResult = await helper.authenticateJWT(token);
+        const userName = req.query.user_name;
+        const searchQuery = req.query.search_query;
+        let detailedSearch = req.query.detailed_search;
+        if (!detailedSearch && detailedSearch !== "true")
+            detailedSearch = false;
+        else if (detailedSearch === "false")
+            detailedSearch = false;
+        let whereConditionArray = [];
+        let whereCondition = `Where `;
+
+        if (detailedSearch) {
+            if (userName !== undefined)
+                whereConditionArray.push(` LOWER(username) LIKE LOWER('%${userName}%')`);
+            if (whereConditionArray.length === 0)
+                whereCondition += ` is_active = true`;
+
+            else {
+                for (let i = 0; i < whereConditionArray.length; i++) {
+                    whereCondition += whereConditionArray[i];
+                    if (i !== whereConditionArray.length - 1)
+                        whereCondition += " AND ";
+                }
+                whereCondition += ` AND is_active = true `
+            }
+
+        } else {
+            if (searchQuery !== undefined) {
+                whereConditionArray.push(` (LOWER(username) LIKE LOWER('%${searchQuery}%')`);
+                whereConditionArray.push(` LOWER(name) LIKE LOWER('%${searchQuery}%'))`);
+            }
+
+            if (whereConditionArray.length === 0)
+                whereCondition += ` is_active = true `;
+
+            else {
+                for (let i = 0; i < whereConditionArray.length; i++) {
+                    whereCondition += whereConditionArray[i];
+                    if (i !== whereConditionArray.length - 1)
+                        whereCondition += " OR ";
+                }
+                whereCondition += ` AND is_active = true `
+            }
+
+        }
+        if (authResult.authenticated) {
+            const results = await db.sequelize.query(
+                `select *
+                FROM package.ref_user_account
+                ${whereCondition}
+                ORDER BY ${orderBy} ${sortDescending === 'true' ? "DESC" : "ASC"}
+                LIMIT ${limit} OFFSET ${offset}`,
+                { type: db.sequelize.QueryTypes.SELECT });
+            if (results) {
+                res.send(helper.createResponseWrapper(results, 0));
+            } else {
+                res.send(helper.createResponseWrapper([], 0, 2, "Invalid input parameters"));
+            }
+        } else {
+            res.send(helper.createResponseWrapper([], 1, 98, "Authentication failed."));
+        }
+    }
+    catch (exception) {
+        console.log(exception);
+        res.send(helper.createResponseWrapper([], 1, 99, "An error has occurred, please contact system administrator."));
+    }
+};
+
+
+exports.delete = async (req, res) => {
+    try {
+        let userId = req.body.id;
+        let token = req.header("token");
+        let authResult = await helper.authenticateJWT(token);
+        if (authResult.authenticated) {
+            let currentDateTime = new Date();
+            await UserAccount.update({
+                is_active: false,
+                updated_date: currentDateTime,
+                updated_by: authResult.token_data.user_account_id,
+            },
+                {
+                    where: {
+                        id: userId,
+                    }
+                });
+
+            res.send(helper.createResponseWrapper([], 0));
+        } else {
+            res.send(helper.createResponseWrapper([], 1, 98, "Authentication failed."));
+        }
+
+    }
+    catch (exception) {
+        console.log(exception);
+        res.send(helper.createResponseWrapper([], 1, 99, "An error has occurred, please contact system administrator."));
+    }
+}
+
+exports.findById = async (req, res) => {
+    try {
+        const token = req.header("token");
+        const userId = req.query.id;
+        const authResult = await helper.authenticateJWT(token);
+        if (authResult.authenticated) {
+            let queryString = `SELECT * from package.ref_user_account where id='${userId}'`;
+            const results = await db.sequelize.query(
+                queryString,
+                { type: db.sequelize.QueryTypes.SELECT });
+            if (results) {
+                res.send(helper.createResponseWrapper(results, 0));
+            } else {
+                res.send(helper.createResponseWrapper([], 0, 2, "Invalid input parameters"));
+            }
+        } else {
+            res.send(helper.createResponseWrapper([], 1, 98, "Authentication failed."));
+        }
+    }
+    catch (exception) {
+        res.send(helper.createResponseWrapper([], 1, 99, "An error has occurred, please contact system administrator."));
+    }
+};
+
+exports.getCount = async (req, res) => {
+    try {
+        const token = req.header("token");
+        const authResult = await helper.authenticateJWT(token);
+        const langId = req.query.language_id;
+        const userName = req.query.user_name;
+        const searchQuery = req.query.search_query;
+        let detailedSearch = req.query.detailed_search;
+        if (!detailedSearch && detailedSearch !== "true")
+            detailedSearch = false;
+        else if (detailedSearch === "false")
+            detailedSearch = false;
+        let whereConditionArray = [];
+        let whereCondition = `Where `;
+
+        if (detailedSearch) {
+            if (userName !== undefined)
+                whereConditionArray.push(` LOWER(userAccount.username) LIKE LOWER('%${userName}%')`);
+            if (whereConditionArray.length === 0)
+                whereCondition += ` userAccount.is_active = true`;
+
+            else {
+                for (let i = 0; i < whereConditionArray.length; i++) {
+                    whereCondition += whereConditionArray[i];
+                    if (i !== whereConditionArray.length - 1)
+                        whereCondition += " AND ";
+                }
+                whereCondition += ` AND userAccount.is_active = true `
+            }
+
+        } else {
+            if (searchQuery !== undefined) {
+                whereConditionArray.push(` (LOWER(userAccount.username) LIKE LOWER('%${searchQuery}%')`);
+                whereConditionArray.push(` LOWER(userAccount.name) LIKE LOWER('%${searchQuery}%'))`);
+            }
+
+            if (whereConditionArray.length === 0)
+                whereCondition += ` userAccount.is_active = true `;
+
+            else {
+                for (let i = 0; i < whereConditionArray.length; i++) {
+                    whereCondition += whereConditionArray[i];
+                    if (i !== whereConditionArray.length - 1)
+                        whereCondition += " OR ";
+                }
+                whereCondition += ` AND userAccount.is_active = true `
+            }
+
+        }
+        if (authResult.authenticated) {
+            const results = await db.sequelize.query(
+                `Select 
+                count(userAccount.id) AS "count" 
+                from package.ref_user_account as userAccount
+                
+                ${whereCondition}`
+            );
+            if (results) {
+                res.send(helper.createResponseWrapper(results[0][0].count, 0));
+            } else {
+                res.send(helper.createResponseWrapper([], 0, 2, "Invalid input parameters"));
+            }
+        } else {
+            res.send(helper.createResponseWrapper([], 1, 98, "Authentication failed."));
+        }
+
+    } catch (exception) {
+        console.log(exception);
+        res.send(helper.createResponseWrapper([], 1, 99, "An error has occurred, please contact system administrator."));
+    }
+}
+
 
 exports.login = async (req, res) => {
     const requests = req.body;
@@ -147,3 +355,28 @@ exports.checkToken = async (req, res) => {
         res.send(helper.createResponseWrapper([], 1, 99, "An error has occurred, please contact system administrator."));
     }
 }
+
+exports.updatePassword = async (req, res) => {
+    try {
+        let requests = req.body;
+        let token = req.header("token");
+        let authResult = await helper.authenticateJWT(token);
+        if (authResult.authenticated) {
+            let currentDateTime = new Date();
+            const results = await db.sequelize.query(
+                `UPDATE package.ref_user_account SET password = PGP_SYM_ENCRYPT('${requests.password}'::text, '${process.env.PG_AES_KEY}'::text),
+                updated_date = '${moment(currentDateTime).toISOString(false)}',
+                updated_by = '${authResult.token_data.user_account_id}' 
+                WHERE id = '${requests.id}' `,
+                { type: db.sequelize.QueryTypes.UPDATE });
+
+            res.send(helper.createResponseWrapper([], 0));
+        } else {
+            res.send(helper.createResponseWrapper([], 1, 98, "Authentication failed."));
+        }
+    }
+    catch (exception) {
+        console.log(exception);
+        res.send(helper.createResponseWrapper([], 1, 99, "An error has occurred, please contact system administrator."));
+    }
+};

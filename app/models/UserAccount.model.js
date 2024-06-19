@@ -47,6 +47,11 @@ module.exports = (sequelize, Sequelize) => {
     user_role: {
       type: DataTypes.BIGINT,
       allowNull: true
+    },
+    name:{
+      type: DataTypes.TEXT,
+      allowNull: true,
+      defaultValue:4
     }
 
   });
