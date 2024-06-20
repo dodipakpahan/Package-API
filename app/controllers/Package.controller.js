@@ -3532,34 +3532,71 @@ exports.insertUpdateDocumentStep12 = async (req, res) => {
                     description: requests.description,
                     created_date: currentDateTime,
                     created_by: authResult.token_data.user_account_id,
-                    package_step_id: requests.package_step_id
+                    package_step_id: requests.package_step_id,
+                    document_type: requests.document_type,
+                    start_date: requests.start_date,
+                    end_date: requests.end_date,
+                    document_number: requests.document_number,
+                    document_status: requests.document_type === "6" || requests.document_type === "7" ? "e0ae1282-b816-4b8b-9a68-7c77c44db7a6" : null
                 },
                     {
-                        fields: ["url_base64", "document_name", "created_date", "created_by", "package_step_id", "description"
+                        fields: ["url_base64", "document_name", "created_date", "created_by", "package_step_id", "description",
+                            "document_type", "start_date", "end_date", "document_number", "document_status"
                         ]
                     });
 
+                if (requests.document_type === "6") {
+                    await Notificatiion.create({
+                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        package_id: requests.package_id,
+                        package_step_id: requests.package_step_id,
+                        created_date: currentDateTime,
+                        created_by: authResult.token_data.user_account_id,
+                        note: "Undangan Rapat SCM Telah Diupload ",
+                        path: requests.path
+                    },
+                        {
+                            fields: ["user_id", "package_id", "note", "created_date", "created_by", "path", "package_step_id"
+                            ]
+                        });
+                }
+                else if (requests.document_type === "7") {
+                    await Notificatiion.create({
+                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        package_id: requests.package_id,
+                        package_step_id: requests.package_step_id,
+                        created_date: currentDateTime,
+                        created_by: authResult.token_data.user_account_id,
+                        note: "Berita Acara Rapat SCM Telah Diupload ",
+                        path: requests.path
+                    },
+                        {
+                            fields: ["user_id", "package_id", "note", "created_date", "created_by", "path", "package_step_id"
+                            ]
+                        });
+                }
 
-                await PackageStep.update({
-                    step_status_id: "a456a3e0-dc3c-4cdb-8f49-d28b224d035c",
-                    updated_date: currentDateTime,
-                    updated_by: authResult.token_data.user_account_id,
-                }, {
-                    where: {
-                        id: requests.package_step_id
-                    }
-                })
 
-                await Package.update({
-                    updated_date: currentDateTime,
-                    updated_by: authResult.token_data.user_account_id,
-                    // package_step: 12
+                // await PackageStep.update({
+                //     step_status_id: "a456a3e0-dc3c-4cdb-8f49-d28b224d035c",
+                //     updated_date: currentDateTime,
+                //     updated_by: authResult.token_data.user_account_id,
+                // }, {
+                //     where: {
+                //         id: requests.package_step_id
+                //     }
+                // })
 
-                }, {
-                    where: {
-                        id: requests.package_id
-                    }
-                });
+                // await Package.update({
+                //     updated_date: currentDateTime,
+                //     updated_by: authResult.token_data.user_account_id,
+                //     // package_step: 12
+
+                // }, {
+                //     where: {
+                //         id: requests.package_id
+                //     }
+                // });
 
                 // await Notificatiion.create({
                 //     user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
@@ -3602,6 +3639,88 @@ exports.insertUpdateDocumentStep12 = async (req, res) => {
     }
 };
 
+exports.updateDOcumentStep12 = async (req, res) => {
+    try {
+        let requests = req.body;
+        let token = req.header("token");
+        let authResult = await helper.authenticateJWT(token);
+        if (authResult.authenticated) {
+            let currentDateTime = new Date();
+            let statusApproval = "";
+            if (requests.approvals) {
+                statusApproval = "73d44b28-62f1-4391-b2fb-b4a61f462cff"
+            } else {
+                statusApproval = "1622ca1c-9bf1-41f5-bd9a-e183f4456090"
+            }
+            await PackageStep12.update({
+                document_status: requests.document_type === "7" ? statusApproval : "73d44b28-62f1-4391-b2fb-b4a61f462cff",
+                updated_date: currentDateTime,
+                updated_by: authResult.token_data.user_account_id,
+            }, {
+                where: {
+                    id: requests.id
+                }
+            });
+
+
+            if (requests.document_type === "6") {
+                await Notificatiion.create({
+                    user_id: requests.provider_name,
+                    package_id: requests.package_id,
+                    package_step_id: requests.package_step_id,
+                    created_date: currentDateTime,
+                    created_by: authResult.token_data.user_account_id,
+                    note: "Undangan Rapat Pembuktian (SCM)",
+                    path: requests.path
+                },
+                    {
+                        fields: ["user_id", "package_id", "note", "created_date", "created_by", "path", "package_step_id"
+                        ]
+                    });
+
+                await Notificatiion.create({
+                    user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                    package_id: requests.package_id,
+                    package_step_id: requests.package_step_id,
+                    created_date: currentDateTime,
+                    created_by: authResult.token_data.user_account_id,
+                    note: "Undangan Rapat Pembuktian(SCM)",
+                    path: requests.path
+                },
+                    {
+                        fields: ["user_id", "package_id", "note", "created_date", "created_by", "path", "package_step_id"
+                        ]
+                    });
+            }
+            if (requests.document_type === "7" && requests.approvals) {
+                await PackageStep.update({
+                    step_status_id: "a456a3e0-dc3c-4cdb-8f49-d28b224d035c",
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+                }, {
+                    where: {
+                        id: requests.package_step_id
+                    }
+                })
+
+            }
+
+
+
+            res.send(helper.createResponseWrapper([], 0));
+
+
+        } else {
+            res.send(helper.createResponseWrapper([], 1, 98, "Authentication failed."));
+        }
+
+    }
+    catch (exception) {
+        console.log(exception);
+        res.send(helper.createResponseWrapper([], 1, 99, "An error has occurred, please contact system administrator."));
+    }
+};
+
 exports.getPackageStep12 = async (req, res) => {
     try {
         const token = req.header("token");
@@ -3613,8 +3732,14 @@ exports.getPackageStep12 = async (req, res) => {
                 document.id,
                 document.document_name,
                 document.description,
-                document.created_date
+                document.created_date,
+                document.document_type,
+                document.start_date,
+                document.end_date,
+                document.document_number,
+                 documentStatus.document_status_name
                 FROM package.trx_package_step_12 document 
+                LEFT JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
                 where package_step_id = '${packageStepId}'`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );

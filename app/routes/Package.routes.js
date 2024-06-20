@@ -86,6 +86,7 @@ module.exports = app => {
     router.post("/insertUpdateDocumentStep12", Package.insertUpdateDocumentStep12);
     router.get("/getPackageStep12ById", Package.getPackageStep12ById);
     router.get("/getPackageStep12", Package.getPackageStep12);
+    router.post("/updateDOcumentStep12", Package.updateDOcumentStep12);
 
     
     router.post("/insertUpdateDocumentStep13", Package.insertUpdateDocumentStep13);

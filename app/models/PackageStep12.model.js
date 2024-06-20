@@ -47,6 +47,26 @@ module.exports = (sequelize, Sequelize) => {
             defaultValue: true,
             allowNull: false
         },
+        document_type:{
+            type: DataTypes.BIGINT,
+            allowNull:true
+        },
+        start_date:{
+            type: DataTypes.DATE,
+            allowNull:true
+        },
+        end_date:{
+            type: DataTypes.DATE,
+            allowNull:true
+        },
+        document_number:{
+            type: DataTypes.TEXT,
+            allowNull:true
+        },
+        document_status:{
+            type: DataTypes.UUID,
+            allowNull:true
+        }
      
     });
     return PackageStep12;
