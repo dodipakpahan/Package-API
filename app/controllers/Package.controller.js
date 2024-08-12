@@ -223,7 +223,12 @@ exports.findAll = async (req, res) => {
         if (authResult.authenticated) {
             const results = await db.sequelize.query(
                 `select 
-                package.*,
+                package.package_name,
+                package.start_date,
+                package.selection_methode,
+                package.id,
+                package.end_date,
+                package.package_step,
                     packageStatus.status_name
                     from package.ref_package package
                 INNER JOIN package.ref_package_status packageStatus on package.package_status = packageStatus.id
@@ -931,7 +936,7 @@ exports.insertUpdateDocumentStep1 = async (req, res) => {
             if (requests.id === 0) {
 
                 const dataStep1 = await db.sequelize.query(
-                    `SELECT * FROM  package.trx_package_step_1 where package_step_id = '${requests.package_step_id}'`,
+                    `SELECT * FROM  package.trx_package_step_1 where package_step_id = '${requests.package_step_id}' and is_active = true`,
                     { type: db.sequelize.QueryTypes.SELECT });
 
 
@@ -974,11 +979,11 @@ exports.insertUpdateDocumentStep1 = async (req, res) => {
                         }
                     })
 
+
                     await Package.update({
                         updated_date: currentDateTime,
                         updated_by: authResult.token_data.user_account_id,
-                        package_step: 1
-
+                        package_step: db.sequelize.literal('CASE WHEN package_step > 1 THEN package_step ELSE 1 END')
                     }, {
                         where: {
                             id: requests.package_id
@@ -987,6 +992,21 @@ exports.insertUpdateDocumentStep1 = async (req, res) => {
                 }
 
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep1.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -1015,7 +1035,7 @@ exports.getPackageStep1 = async (req, res) => {
                 documentStatus.document_status_name
                 FROM package.trx_package_step_1 document 
                 LEFT JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -1131,7 +1151,7 @@ exports.insertUpdateDocumentStep2 = async (req, res) => {
             let currentDateTime = new Date();
             if (requests.id === 0) {
                 const dataStep = await db.sequelize.query(
-                    `SELECT * FROM  package.trx_package_step_2 where package_step_id = '${requests.package_step_id}'`,
+                    `SELECT * FROM  package.trx_package_step_2 where package_step_id = '${requests.package_step_id}' and is_active = true`,
                     { type: db.sequelize.QueryTypes.SELECT });
 
                 const data = await PackageStep2.create({
@@ -1225,6 +1245,21 @@ exports.insertUpdateDocumentStep2 = async (req, res) => {
 
 
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep2.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -1253,7 +1288,7 @@ exports.getPackageStep2 = async (req, res) => {
                 documentStatus.document_status_name
                 FROM package.trx_package_step_2 document 
                 LEFT JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
-                where document.package_step_id = '${packageStepId}'`,
+                where document.package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -1306,7 +1341,7 @@ exports.updateStep2DocumentStatus = async (req, res) => {
         if (authResult.authenticated) {
             let currentDateTime = new Date();
             const dataStep = await db.sequelize.query(
-                `SELECT * FROM  package.trx_package_step_2 where package_step_id = '${requests.package_step_id}'`,
+                `SELECT * FROM  package.trx_package_step_2 where package_step_id = '${requests.package_step_id}' and is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT });
 
             await PackageStep2.update({
@@ -1407,7 +1442,7 @@ exports.updateStep2DocumentStatus = async (req, res) => {
                 await Package.update({
                     updated_date: currentDateTime,
                     updated_by: authResult.token_data.user_account_id,
-                    package_step: 2
+                    package_step: db.sequelize.literal('CASE WHEN package_step > 2 THEN package_step ELSE 2 END')
 
                 }, {
                     where: {
@@ -1501,7 +1536,7 @@ exports.insertUpdateDocumentStep3 = async (req, res) => {
                 //     });
 
                 const dataStep = await db.sequelize.query(
-                    `SELECT * FROM  package.trx_package_step_3 where package_step_id = '${requests.package_step_id}'`,
+                    `SELECT * FROM  package.trx_package_step_3 where package_step_id = '${requests.package_step_id}' and is_active = true`,
                     { type: db.sequelize.QueryTypes.SELECT });
 
 
@@ -1547,7 +1582,7 @@ exports.insertUpdateDocumentStep3 = async (req, res) => {
                     await Package.update({
                         updated_date: currentDateTime,
                         updated_by: authResult.token_data.user_account_id,
-                        package_step: 3
+                        package_step: db.sequelize.literal('CASE WHEN package_step > 3 THEN package_step ELSE 3 END')
 
                     }, {
                         where: {
@@ -1557,6 +1592,21 @@ exports.insertUpdateDocumentStep3 = async (req, res) => {
                 }
 
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep3.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -1585,7 +1635,7 @@ exports.getPackageStep3 = async (req, res) => {
                 documentStatus.document_status_name
                 FROM package.trx_package_step_3 document 
                 LEFT JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -1751,6 +1801,21 @@ exports.insertUpdateDocumentStep4 = async (req, res) => {
                     });
 
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep4.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -1795,7 +1860,7 @@ exports.updateDocumentStep4 = async (req, res) => {
             await Package.update({
                 updated_date: currentDateTime,
                 updated_by: authResult.token_data.user_account_id,
-                package_step: 4
+                package_step: db.sequelize.literal('CASE WHEN package_step > 4 THEN package_step ELSE 4 END')
 
             }, {
                 where: {
@@ -1864,7 +1929,7 @@ exports.getPackageStep4 = async (req, res) => {
                 documentStatus.document_status_name
                 FROM package.trx_package_step_4 document 
                 INNER JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -2008,13 +2073,12 @@ exports.insertUpdateDocumentStep5 = async (req, res) => {
         let requests = req.body;
         let token = req.header("token");
         let authResult = await helper.authenticateJWT(token);
-        console.log('============', requests);
         if (authResult.authenticated) {
 
             let currentDateTime = new Date();
             if (requests.id === 0) {
                 const dataStep = await db.sequelize.query(
-                    `SELECT * FROM  package.trx_package_step_5 where package_step_id = '${requests.package_step_id}'`,
+                    `SELECT * FROM  package.trx_package_step_5 where package_step_id = '${requests.package_step_id}' and is_active = true`,
                     { type: db.sequelize.QueryTypes.SELECT });
 
 
@@ -2060,7 +2124,7 @@ exports.insertUpdateDocumentStep5 = async (req, res) => {
                     await Package.update({
                         updated_date: currentDateTime,
                         updated_by: authResult.token_data.user_account_id,
-                        package_step: 5
+                        package_step: db.sequelize.literal('CASE WHEN package_step > 5 THEN package_step ELSE 5 END')
 
                     }, {
                         where: {
@@ -2071,6 +2135,21 @@ exports.insertUpdateDocumentStep5 = async (req, res) => {
 
 
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep5.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -2165,7 +2244,7 @@ exports.getPackageStep5 = async (req, res) => {
                 documentStatus.document_status_name
                 FROM package.trx_package_step_5 document 
                 LEFT JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -2255,7 +2334,7 @@ exports.insertUpdateDocumentStep6 = async (req, res) => {
 
 
                 const dataStep = await db.sequelize.query(
-                    `SELECT * FROM  package.trx_package_step_6 where package_step_id = '${requests.package_step_id}'`,
+                    `SELECT * FROM  package.trx_package_step_6 where package_step_id = '${requests.package_step_id}' and is_active = true`,
                     { type: db.sequelize.QueryTypes.SELECT });
 
 
@@ -2301,7 +2380,7 @@ exports.insertUpdateDocumentStep6 = async (req, res) => {
                     await Package.update({
                         updated_date: currentDateTime,
                         updated_by: authResult.token_data.user_account_id,
-                        package_step: 7
+                        package_step: db.sequelize.literal('CASE WHEN package_step > 7 THEN package_step ELSE 7 END')
 
                     }, {
                         where: {
@@ -2311,6 +2390,21 @@ exports.insertUpdateDocumentStep6 = async (req, res) => {
                 }
 
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep6.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -2339,7 +2433,7 @@ exports.getPackageStep6 = async (req, res) => {
                 documentStatus.document_status_name
                 FROM package.trx_package_step_6 document 
                 LEFT JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true `,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -2520,6 +2614,21 @@ exports.insertUpdateDocumentStep7 = async (req, res) => {
                 //         ]
                 //     });
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep7.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -2546,7 +2655,7 @@ exports.getPackageStep7 = async (req, res) => {
                 document.description,
                 document.created_date
                 FROM package.trx_package_step_7 document 
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -2671,6 +2780,21 @@ exports.insertUpdateDocumentStep8 = async (req, res) => {
 
 
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep8.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -2693,7 +2817,7 @@ exports.updateDocumentStep8 = async (req, res) => {
             let currentDateTime = new Date();
 
             const dataStep = await db.sequelize.query(
-                `SELECT * FROM  package.trx_package_step_8 where package_step_id = '${requests.package_step_id}'`,
+                `SELECT * FROM  package.trx_package_step_8 where package_step_id = '${requests.package_step_id}' and is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT });
 
 
@@ -2721,7 +2845,7 @@ exports.updateDocumentStep8 = async (req, res) => {
                 await Package.update({
                     updated_date: currentDateTime,
                     updated_by: authResult.token_data.user_account_id,
-                    package_step: 8
+                    package_step: db.sequelize.literal('CASE WHEN package_step > 8 THEN package_step ELSE 8 END')
 
                 }, {
                     where: {
@@ -2814,7 +2938,7 @@ exports.getPackageStep8 = async (req, res) => {
                 documentStatus.document_status_name
                 FROM package.trx_package_step_8 document 
                 INNER JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -2866,11 +2990,10 @@ exports.insertUpdateDocumentStep9 = async (req, res) => {
         let authResult = await helper.authenticateJWT(token);
         if (authResult.authenticated) {
             let currentDateTime = new Date();
-            const dataStep = await db.sequelize.query(
-                `SELECT * FROM  package.trx_package_step_9 where package_step_id = '${requests.package_step_id}'`,
-                { type: db.sequelize.QueryTypes.SELECT });
-
             if (requests.id === 0) {
+                const dataStep = await db.sequelize.query(
+                    `SELECT * FROM  package.trx_package_step_9 where package_step_id = '${requests.package_step_id}' and is_active = true`,
+                    { type: db.sequelize.QueryTypes.SELECT });
                 const data = await PackageStep9.create({
                     url_base64: requests.url_base64,
                     document_name: requests.document_name,
@@ -2916,7 +3039,7 @@ exports.insertUpdateDocumentStep9 = async (req, res) => {
                     await Package.update({
                         updated_date: currentDateTime,
                         updated_by: authResult.token_data.user_account_id,
-                        package_step: 9
+                        package_step: db.sequelize.literal('CASE WHEN package_step > 9 THEN package_step ELSE 9 END')
 
                     }, {
                         where: {
@@ -2930,6 +3053,21 @@ exports.insertUpdateDocumentStep9 = async (req, res) => {
 
 
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep9.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -2958,7 +3096,7 @@ exports.getPackageStep9 = async (req, res) => {
                 documentStatus.document_status_name
                 FROM package.trx_package_step_9 document 
                 left join package.ref_document_status documentStatus on document.document_status = documentStatus.id
-                where document.package_step_id = '${packageStepId}'`,
+                where document.package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -3121,7 +3259,7 @@ exports.insertUpdateDocumentStep10 = async (req, res) => {
                 await Package.update({
                     updated_date: currentDateTime,
                     updated_by: authResult.token_data.user_account_id,
-                    package_step: 10
+                    package_step: db.sequelize.literal('CASE WHEN package_step > 10 THEN package_step ELSE 10 END')
 
                 }, {
                     where: {
@@ -3130,6 +3268,21 @@ exports.insertUpdateDocumentStep10 = async (req, res) => {
                 });
 
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep10.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -3176,7 +3329,7 @@ exports.updateDocumentStep10 = async (req, res) => {
             await Package.update({
                 updated_date: currentDateTime,
                 updated_by: authResult.token_data.user_account_id,
-                package_step: 10
+                package_step: db.sequelize.literal('CASE WHEN package_step > 10 THEN package_step ELSE 10 END')
 
             }, {
                 where: {
@@ -3242,7 +3395,7 @@ exports.getPackageStep10 = async (req, res) => {
                 document.description,
                 document.created_date
                 FROM package.trx_package_step_10 document 
-                  where package_step_id = '${packageStepId}'`,
+                  where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -3294,11 +3447,12 @@ exports.insertUpdateDocumentStep11 = async (req, res) => {
         let authResult = await helper.authenticateJWT(token);
         if (authResult.authenticated) {
             let currentDateTime = new Date();
-            const dataStep = await db.sequelize.query(
-                `SELECT * FROM  package.trx_package_step_11 where package_step_id = '${requests.package_step_id}'`,
-                { type: db.sequelize.QueryTypes.SELECT });
+            
 
             if (requests.id === 0) {
+                const dataStep = await db.sequelize.query(
+                    `SELECT * FROM  package.trx_package_step_11 where package_step_id = '${requests.package_step_id}' and is_active = true`,
+                    { type: db.sequelize.QueryTypes.SELECT });
                 const data = await PackageStep11.create({
                     url_base64: requests.url_base64,
                     document_name: requests.document_name,
@@ -3344,7 +3498,7 @@ exports.insertUpdateDocumentStep11 = async (req, res) => {
                     await Package.update({
                         updated_date: currentDateTime,
                         updated_by: authResult.token_data.user_account_id,
-                        package_step: 22
+                        package_step: db.sequelize.literal('CASE WHEN package_step > 22 THEN package_step ELSE 22 END')
 
                     }, {
                         where: {
@@ -3383,6 +3537,21 @@ exports.insertUpdateDocumentStep11 = async (req, res) => {
                 //         ]
                 //     });
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep11.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -3411,7 +3580,7 @@ exports.getPackageStep11 = async (req, res) => {
                 documentStatus.document_status_name
                 FROM package.trx_package_step_11 document 
                 LEFT join package.ref_document_status documentStatus on document.document_status = documentStatus.id
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -3626,6 +3795,25 @@ exports.insertUpdateDocumentStep12 = async (req, res) => {
                 //         ]
                 //     });
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep12.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    start_date: requests.start_date,
+                    end_date: requests.end_date,
+                    document_number: requests.document_number,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -3638,6 +3826,39 @@ exports.insertUpdateDocumentStep12 = async (req, res) => {
         res.send(helper.createResponseWrapper([], 1, 99, "An error has occurred, please contact system administrator."));
     }
 };
+
+
+exports.deleteDocumentStep12 = async (req, res) => {
+    try {
+        let documentId = req.body.id;
+        let token = req.header("token");
+        let authResult = await helper.authenticateJWT(token);
+        if (authResult.authenticated) {
+            let currentDateTime = new Date();
+            await PackageStep12.update({
+                is_active: false,
+                updated_date: currentDateTime,
+                updated_by: authResult.token_data.user_account_id,
+
+            },
+                {
+                    where: {
+                        id: documentId,
+                    }
+                });
+
+
+            res.send(helper.createResponseWrapper([], 0));
+        } else {
+            res.send(helper.createResponseWrapper([], 1, 98, "Authentication failed."));
+        }
+
+    }
+    catch (exception) {
+        console.log(exception);
+        res.send(helper.createResponseWrapper([], 1, 99, "An error has occurred, please contact system administrator."));
+    }
+}
 
 exports.updateDOcumentStep12 = async (req, res) => {
     try {
@@ -3740,7 +3961,8 @@ exports.getPackageStep12 = async (req, res) => {
                  documentStatus.document_status_name
                 FROM package.trx_package_step_12 document 
                 LEFT JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' AND is_active = true
+                ORDER BY created_date DESC`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -3864,6 +4086,21 @@ exports.insertUpdateDocumentStep13 = async (req, res) => {
                 //     });
 
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep13.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -3977,7 +4214,7 @@ exports.getPackageStep13 = async (req, res) => {
                 document.description,
                 document.created_date
                 FROM package.trx_package_step_13 document 
-                 where package_step_id = '${packageStepId}'`,
+                 where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -4093,6 +4330,21 @@ exports.insertUpdateDocumentStep14 = async (req, res) => {
                 //         ]
                 //     });
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep14.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -4119,7 +4371,7 @@ exports.getPackageStep14 = async (req, res) => {
                 document.description,
                 document.created_date
                 FROM package.trx_package_step_14 document 
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -4224,6 +4476,21 @@ exports.insertUpdateDocumentStep15 = async (req, res) => {
                 //     });
 
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep15.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -4336,7 +4603,7 @@ exports.getPackageStep15 = async (req, res) => {
                 document.description,
                 document.created_date
                 FROM package.trx_package_step_15 document 
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -4453,6 +4720,21 @@ exports.insertUpdateDocumentStep16 = async (req, res) => {
                 //         ]
                 //     });
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep16.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -4479,7 +4761,7 @@ exports.getPackageStep16 = async (req, res) => {
                 document.description,
                 document.created_date
                 FROM package.trx_package_step_16 document 
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -4594,6 +4876,21 @@ exports.insertUpdateDocumentStep17 = async (req, res) => {
                 //         ]
                 //     });
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep17.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -4620,7 +4917,7 @@ exports.getPackageStep17 = async (req, res) => {
                 document.description,
                 document.created_date
                 FROM package.trx_package_step_17 document 
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -4710,6 +5007,21 @@ exports.insertUpdateDocumentStep18 = async (req, res) => {
 
 
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep18.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -4736,7 +5048,7 @@ exports.getPackageStep18 = async (req, res) => {
                 document.description,
                 document.created_date
                 FROM package.trx_package_step_18 document 
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -4825,6 +5137,21 @@ exports.insertUpdateDocumentStep19 = async (req, res) => {
                 //     }
                 // });
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep19.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -4937,7 +5264,7 @@ exports.getPackageStep19 = async (req, res) => {
                 document.description,
                 document.created_date
                 FROM package.trx_package_step_19 document 
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -5053,6 +5380,21 @@ exports.insertUpdateDocumentStep20 = async (req, res) => {
                 //         ]
                 //     });
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep20.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -5079,7 +5421,7 @@ exports.getPackageStep20 = async (req, res) => {
                 document.description,
                 document.created_date
                 FROM package.trx_package_step_20 document 
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -5134,7 +5476,7 @@ exports.insertUpdateDocumentStep21 = async (req, res) => {
             let currentDateTime = new Date();
             if (requests.id === 0) {
                 const dataStep = await db.sequelize.query(
-                    `SELECT * FROM  package.trx_package_step_21 where package_step_id = '${requests.package_step_id}'`,
+                    `SELECT * FROM  package.trx_package_step_21 where package_step_id = '${requests.package_step_id}' and is_active = true`,
                     { type: db.sequelize.QueryTypes.SELECT });
 
                 const data = await PackageStep21.create({
@@ -5234,6 +5576,21 @@ exports.insertUpdateDocumentStep21 = async (req, res) => {
                 //         ]
                 //     });
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep21.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -5258,7 +5615,7 @@ exports.updateDocumentStep21 = async (req, res) => {
 
 
             const dataStep = await db.sequelize.query(
-                `SELECT * FROM  package.trx_package_step_21 where package_step_id = '${requests.package_step_id}'`,
+                `SELECT * FROM  package.trx_package_step_21 where package_step_id = '${requests.package_step_id}' and is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT });
 
 
@@ -5349,7 +5706,7 @@ exports.getPackageStep21 = async (req, res) => {
                 statusDocument.document_status_name
                 FROM package.trx_package_step_21 document
                 LEFT JOIN package.ref_document_status statusDocument on document.document_status = statusDocument.id
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -5473,6 +5830,21 @@ exports.insertUpdateDocumentStep22 = async (req, res) => {
                 //     });
 
                 res.send(helper.createResponseWrapper(data, 0));
+            }else {
+                await PackageStep22.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -5586,7 +5958,7 @@ exports.getPackageStep22 = async (req, res) => {
                 document.description,
                 document.created_date
                 FROM package.trx_package_step_22 document 
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -5745,6 +6117,22 @@ exports.insertUpdateDocumentStep23 = async (req, res) => {
 
                 res.send(helper.createResponseWrapper(data, 0));
             }
+            else {
+                await PackageStep23.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
+            }
 
         } else {
             res.send(helper.createResponseWrapper([], 1, 98, "Authentication failed."));
@@ -5772,7 +6160,7 @@ exports.getPackageStep23 = async (req, res) => {
                 statusDocument.document_status_name
                 FROM package.trx_package_step_23 document 
                 LEFT JOIN package.ref_document_status statusDocument on document.document_status = statusDocument.id
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -5827,7 +6215,7 @@ exports.updateDocumentStep23 = async (req, res) => {
 
 
             const dataStep = await db.sequelize.query(
-                `SELECT * FROM  package.trx_package_step_23 where package_step_id = '${requests.package_step_id}'`,
+                `SELECT * FROM  package.trx_package_step_23 where package_step_id = '${requests.package_step_id}' and is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT });
 
 
@@ -5913,7 +6301,7 @@ exports.updateDocumentStep23 = async (req, res) => {
                 await Package.update({
                     updated_date: currentDateTime,
                     updated_by: authResult.token_data.user_account_id,
-                    package_step: 23
+                    package_step: db.sequelize.literal('CASE WHEN package_step > 23 THEN package_step ELSE 23 END')
 
                 }, {
                     where: {
@@ -5951,7 +6339,7 @@ exports.insertUpdateDocumentStep24 = async (req, res) => {
             if (requests.id === 0) {
 
                 const dataStep = await db.sequelize.query(
-                    `SELECT * FROM  package.trx_package_step_24 where package_step_id = '${requests.package_step_id}'`,
+                    `SELECT * FROM  package.trx_package_step_24 where package_step_id = '${requests.package_step_id}' and is_active = true`,
                     { type: db.sequelize.QueryTypes.SELECT });
 
 
@@ -5999,7 +6387,7 @@ exports.insertUpdateDocumentStep24 = async (req, res) => {
                     await Package.update({
                         updated_date: currentDateTime,
                         updated_by: authResult.token_data.user_account_id,
-                        package_step: 24
+                        package_step: db.sequelize.literal('CASE WHEN package_step > 24 THEN package_step ELSE 24 END')
 
                     }, {
                         where: {
@@ -6015,6 +6403,21 @@ exports.insertUpdateDocumentStep24 = async (req, res) => {
 
 
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep24.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -6043,7 +6446,7 @@ exports.getPackageStep24 = async (req, res) => {
                 documentStatus.document_status_name
                 FROM package.trx_package_step_24 document 
                 LEFT JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -6158,7 +6561,7 @@ exports.insertUpdateDocumentStep25 = async (req, res) => {
             let currentDateTime = new Date();
             if (requests.id === 0) {
                 const dataStep = await db.sequelize.query(
-                    `SELECT * FROM  package.trx_package_step_25 where package_step_id = '${requests.package_step_id}'`,
+                    `SELECT * FROM  package.trx_package_step_25 where package_step_id = '${requests.package_step_id}' and is_active = true`,
                     { type: db.sequelize.QueryTypes.SELECT });
 
                 const data = await PackageStep25.create({
@@ -6222,7 +6625,7 @@ exports.insertUpdateDocumentStep25 = async (req, res) => {
                     await Package.update({
                         updated_date: currentDateTime,
                         updated_by: authResult.token_data.user_account_id,
-                        package_step: 25
+                        package_step: db.sequelize.literal('CASE WHEN package_step > 25 THEN package_step ELSE 25 END')
 
                     }, {
                         where: {
@@ -6261,6 +6664,21 @@ exports.insertUpdateDocumentStep25 = async (req, res) => {
                 //         ]
                 //     });
                 res.send(helper.createResponseWrapper(data, 0));
+            } else {
+                await PackageStep25.update({
+                    url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
+                    document_name: requests.document_name,
+                    description: requests.description,
+                    updated_date: currentDateTime,
+                    updated_by: authResult.token_data.user_account_id,
+
+                },
+                    {
+                        where: {
+                            id: requests.id,
+                        }
+                    });
+                res.send(helper.createResponseWrapper([], 0));
             }
 
         } else {
@@ -6289,7 +6707,7 @@ exports.getPackageStep25 = async (req, res) => {
                 documentStatus.document_status_name
                 FROM package.trx_package_step_25 document 
                 LEFT JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
-                where package_step_id = '${packageStepId}'`,
+                where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
             );
             if (results) {
@@ -6318,7 +6736,7 @@ exports.updateDocumentStep25 = async (req, res) => {
 
 
             const dataStep = await db.sequelize.query(
-                `SELECT * FROM  package.trx_package_step_25 where package_step_id = '${requests.package_step_id}'`,
+                `SELECT * FROM  package.trx_package_step_25 where package_step_id = '${requests.package_step_id}' and is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT });
 
 
@@ -6411,7 +6829,7 @@ exports.getPackageStep25ById = async (req, res) => {
             res.send(helper.createResponseWrapper([], 1, 98, "Authentication failed."));
         }
     }
-    catch (exception) {
+    catch (exception) { 
         console.log(exception);
         res.send(helper.createResponseWrapper([], 1, 99, "An error has occurred, please contact system administrator."));
     }
@@ -7873,3 +8291,429 @@ exports.getCountTotalPackageComplete = async (req, res) => {
         res.send(helper.createResponseWrapper([], 1, 99, "An error has occurred, please contact system administrator."));
     }
 }
+
+exports.deleteDocumentStep = async (req, res) => {
+    try {
+        let documentId = req.body.id;
+        let packageStep = req.body.package_step;
+        let token = req.header("token");
+        let authResult = await helper.authenticateJWT(token);
+        if (authResult.authenticated) {
+            let currentDateTime = new Date();
+
+            switch (packageStep) {
+                case 1:
+                    await PackageStep1.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 2:
+                    await PackageStep2.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 3:
+                    await PackageStep3.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 4:
+                    // Handle step 4
+                    await PackageStep4.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 5:
+                    // Handle step 5
+                    await PackageStep5.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+
+                    break;
+                case 6:
+                    await PackageStep6.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    // Handle step 6
+                    break;
+                case 7:
+                    await PackageStep7.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    // Handle step 7
+                    break;
+                case 8:
+                    // Handle step 8
+                    await PackageStep8.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 9:
+                    // Handle step 9
+                    await PackageStep9.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 10:
+                    // Handle step 10
+                    await PackageStep10.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 11:
+                    // Handle step 11
+                    await PackageStep11.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 12:
+                    // Handle step 12
+                    await PackageStep12.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 13:
+                    // Handle step 13
+                    await PackageStep13.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 14:
+                    // Handle step 14
+                    await PackageStep14.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 15:
+                    // Handle step 15
+                    await PackageStep15.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 16:
+                    // Handle step 16
+                    await PackageStep16.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 17:
+                    // Handle step 17
+                    await PackageStep17.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 18:
+                    // Handle step 18
+                    await PackageStep18.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 19:
+                    // Handle step 19
+                    await PackageStep19.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 20:
+                    // Handle step 20
+                    await PackageStep20.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 21:
+                    // Handle step 21
+                    await PackageStep21.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 22:
+                    // Handle step 22
+                    await PackageStep22.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 23:
+                    // Handle step 23
+                    await PackageStep23.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 24:
+                    // Handle step 24
+                    await PackageStep24.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                case 25:
+                    // Handle step 25
+                    await PackageStep25.update({
+                        is_active: false,
+                        updated_date: currentDateTime,
+                        updated_by: authResult.token_data.user_account_id,
+
+                    },
+                        {
+                            where: {
+                                id: documentId,
+                            }
+                        });
+                    break;
+                // default:
+                //     // Handle the default case if step doesn't match any of the above
+                //     break;
+            }
+
+
+
+
+            res.send(helper.createResponseWrapper([], 0));
+        } else {
+            res.send(helper.createResponseWrapper([], 1, 98, "Authentication failed."));
+        }
+
+    }
+    catch (exception) {
+        console.log(exception);
+        res.send(helper.createResponseWrapper([], 1, 99, "An error has occurred, please contact system administrator."));
+    }
+}
+
+exports.findDetailPackage = async (req, res) => {
+    try {
+        const token = req.header("token");
+        const packageId = req.query.id;
+        const authResult = await helper.authenticateJWT(token);
+        if (authResult.authenticated) {
+            let queryString = `SELECT 
+            package.package_name,
+            package.start_date,
+            package.created_date,
+            package.id,
+            package.package_step,
+            package.selection_methode,
+            package.pagu,
+            package.hps,
+            package.kontrak,
+            package.provider_name,
+            package.planing_consultant,
+            package.supervising_consultant,
+            package.contract_number,
+            package.document_status,
+            package.package_status,
+            package.ppk_name,
+            documentStatus.document_status_name,
+            userAccount.name as providerName,
+            packageStatus.status_name
+            from package.ref_package package
+            LEFT JOIN package.ref_document_status documentStatus on package.document_status  = documentStatus.id
+            LEFT JOIN package.ref_user_account userAccount on package.provider_name = userAccount.id
+            LEFT JOIN package.ref_package_status packageStatus on package.package_status = packageStatus.id
+            where package.id='${packageId}'`;
+            const results = await db.sequelize.query(
+                queryString,
+                { type: db.sequelize.QueryTypes.SELECT });
+            if (results) {
+                res.send(helper.createResponseWrapper(results, 0));
+            } else {
+                res.send(helper.createResponseWrapper([], 0, 2, "Invalid input parameters"));
+            }
+        } else {
+            res.send(helper.createResponseWrapper([], 1, 98, "Authentication failed."));
+        }
+    }
+    catch (exception) {
+        res.send(helper.createResponseWrapper([], 1, 99, "An error has occurred, please contact system administrator."));
+    }
+};

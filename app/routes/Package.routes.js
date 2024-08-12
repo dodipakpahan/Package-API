@@ -5,6 +5,7 @@ module.exports = app => {
     router.post("/insertUpdate", Package.insertUpdate);
     router.post("/delete", Package.delete);
     router.get("/findById", Package.findById);
+    router.get("/findDetailPackage", Package.findDetailPackage);
     router.get("/findAll", Package.findAll);
     router.get("/getCount", Package.getCount);
     router.get("/findAllPackageStatus", Package.findAllPackageStatus);
@@ -87,6 +88,7 @@ module.exports = app => {
     router.get("/getPackageStep12ById", Package.getPackageStep12ById);
     router.get("/getPackageStep12", Package.getPackageStep12);
     router.post("/updateDOcumentStep12", Package.updateDOcumentStep12);
+    router.post("/deleteDocumentStep12", Package.deleteDocumentStep12);
 
     
     router.post("/insertUpdateDocumentStep13", Package.insertUpdateDocumentStep13);
@@ -200,6 +202,9 @@ module.exports = app => {
     router.get("/getCountTotalPackage", Package.getCountTotalPackage);
     router.get("/getCountTotalPackageComplete", Package.getCountTotalPackageComplete);
     router.get("/getCountTotalPackageInProgress", Package.getCountTotalPackageInProgress);
+
+
+    router.post("/deleteDocumentStep", Package.deleteDocumentStep);
 
 
     app.use("/api/Package", router);
