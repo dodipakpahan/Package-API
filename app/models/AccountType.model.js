@@ -1,7 +1,7 @@
 const { Sequelize, Model, DataTypes } = require("sequelize");
 
 module.exports = (sequelize, Sequelize) => {
-  const UserAccount = sequelize.define("ref_user_account", {
+  const AccountType = sequelize.define("ref_account_type", {
     id: {
       type: DataTypes.UUID,
       defaultValue: Sequelize.UUIDV4,
@@ -9,15 +9,7 @@ module.exports = (sequelize, Sequelize) => {
       autoIncrement: true,
       allowNull: false
     },
-    username: {
-      type: DataTypes.STRING(255),
-      allowNull: false
-    },
-    email: {
-      type: DataTypes.TEXT,
-      allowNull: false
-    },
-    password: {
+    type_name: {
       type: DataTypes.TEXT,
       allowNull: false
     },
@@ -44,20 +36,7 @@ module.exports = (sequelize, Sequelize) => {
       defaultValue: true,
       allowNull: false
     },
-    user_role: {
-      type: DataTypes.BIGINT,
-      allowNull: true
-    },
-    name:{
-      type: DataTypes.TEXT,
-      allowNull: true,
-      defaultValue:4
-    },
-    account_type:{
-      type: DataTypes.UUID,
-      allowNull: false
-    }
 
   });
-  return UserAccount;
+  return AccountType;
 };

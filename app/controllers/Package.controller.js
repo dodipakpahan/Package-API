@@ -112,8 +112,14 @@ exports.insertUpdate = async (req, res) => {
                             ]
                         });
                 }
+
+                let ppkAccount = await db.sequelize.query(
+                    `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 1`,
+                    { type: db.sequelize.QueryTypes.SELECT });
+
+
                 await Notificatiion.create({
-                    user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                    user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                     package_id: data.dataValues.id,
                     created_date: currentDateTime,
                     created_by: authResult.token_data.user_account_id,
@@ -172,6 +178,7 @@ exports.findAll = async (req, res) => {
         const orderBy = req.query.order_by;
         const userRole = req.query.user_role
         const sortDescending = req.query.descending;
+        const accountType = req.query.account_type;
         const token = req.header("token");
         const authResult = await helper.authenticateJWT(token);
         const packageName = req.query.package_name;
@@ -182,10 +189,12 @@ exports.findAll = async (req, res) => {
         else if (detailedSearch === "false")
             detailedSearch = false;
         let whereConditionArray = [];
-        let whereCondition = `Where `;
+        let whereCondition = `Where   `;
 
         if (userRole === "4") {
             whereCondition += ` package.provider_name = '${authResult.token_data.user_account_id}' AND `
+        } else {
+            whereCondition += ` account.account_type = '${accountType}' AND `
         }
         if (detailedSearch) {
             if (packageName !== undefined)
@@ -232,6 +241,7 @@ exports.findAll = async (req, res) => {
                     packageStatus.status_name
                     from package.ref_package package
                 INNER JOIN package.ref_package_status packageStatus on package.package_status = packageStatus.id
+                INNER JOIN package.ref_user_account account on package.created_by = account.id
                 ${whereCondition}
                 ORDER BY package.${orderBy} ${sortDescending === 'true' ? "DESC" : "ASC"}
                 LIMIT ${limit} OFFSET ${offset}`,
@@ -319,6 +329,7 @@ exports.getCount = async (req, res) => {
         const token = req.header("token");
         const authResult = await helper.authenticateJWT(token);
         const langId = req.query.language_id;
+        const accountType = req.query.account_type;
         const packageName = req.query.package_name;
         const searchQuery = req.query.search_query;
         const userRole = req.query.user_role;
@@ -331,6 +342,8 @@ exports.getCount = async (req, res) => {
         let whereCondition = `Where `;
         if (userRole === "4") {
             whereCondition += ` package.provider_name = '${authResult.token_data.user_account_id}' AND `
+        } else {
+            whereCondition += ` account.account_type = '${accountType}' AND `
         }
 
         if (detailedSearch) {
@@ -372,6 +385,7 @@ exports.getCount = async (req, res) => {
                 count(package.id) AS "count" 
                 from package.ref_package as package
                 INNER JOIN package.ref_package_status packageStatus on package.package_status = packageStatus.id
+                INNER JOIN package.ref_user_account account on package.created_by = account.id
                 ${whereCondition}`
             );
             if (results) {
@@ -799,9 +813,14 @@ exports.updatePackageDocumentStatus = async (req, res) => {
                 }
             });
 
+            let pptkAccount = await db.sequelize.query(
+                `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 2`,
+                { type: db.sequelize.QueryTypes.SELECT });
+
+
 
             await Notificatiion.create({
-                user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                 package_id: requests.package_id,
                 created_date: currentDateTime,
                 created_by: authResult.token_data.user_account_id,
@@ -939,6 +958,11 @@ exports.insertUpdateDocumentStep1 = async (req, res) => {
                     `SELECT * FROM  package.trx_package_step_1 where package_step_id = '${requests.package_step_id}' and is_active = true`,
                     { type: db.sequelize.QueryTypes.SELECT });
 
+                let ppkAccount = await db.sequelize.query(
+                    `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 1`,
+                    { type: db.sequelize.QueryTypes.SELECT });
+
+
 
                 const data = await PackageStep1.create({
                     url_base64: requests.url_base64,
@@ -956,7 +980,7 @@ exports.insertUpdateDocumentStep1 = async (req, res) => {
 
                 if (dataStep1.length === 0) {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -1032,6 +1056,7 @@ exports.getPackageStep1 = async (req, res) => {
                 document.document_name,
                 document.description,
                 document.created_date,
+                document.created_by,
                 documentStatus.document_status_name
                 FROM package.trx_package_step_1 document 
                 LEFT JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
@@ -1098,11 +1123,14 @@ exports.updateStep1DocumentStatus = async (req, res) => {
                 }
             });
 
+            let pptkAccount = await db.sequelize.query(
+                `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 2`,
+                { type: db.sequelize.QueryTypes.SELECT });
 
 
 
             await Notificatiion.create({
-                user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, // "d95495df-44ee-4c0a-9e3d-762c33717c8a",
                 package_id: requests.package_id,
                 package_step_id: requests.package_step_id,
                 path: requests.path,
@@ -1194,9 +1222,16 @@ exports.insertUpdateDocumentStep2 = async (req, res) => {
 
                 // }
 
+                let ppkAccount = await db.sequelize.query(
+                    `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 1`,
+                    { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
                 if (dataStep.length === 0) {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -1212,7 +1247,7 @@ exports.insertUpdateDocumentStep2 = async (req, res) => {
 
                 if (dataStep.length > 0) {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -1228,7 +1263,7 @@ exports.insertUpdateDocumentStep2 = async (req, res) => {
 
                 if (dataStep.length > 1) {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -1285,6 +1320,7 @@ exports.getPackageStep2 = async (req, res) => {
                 document.document_name,
                 document.description,
                 document.created_date,
+                document.created_by,
                 documentStatus.document_status_name
                 FROM package.trx_package_step_2 document 
                 LEFT JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
@@ -1355,9 +1391,17 @@ exports.updateStep2DocumentStatus = async (req, res) => {
                 }
             });
 
+            let pptkAccount = await db.sequelize.query(
+                `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 2`,
+                { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
+
             if (dataStep.length === 1) {
                 await Notificatiion.create({
-                    user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                    user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                     package_id: requests.package_id,
                     package_step_id: requests.package_step_id,
                     path: requests.path,
@@ -1401,7 +1445,7 @@ exports.updateStep2DocumentStatus = async (req, res) => {
                     });
 
                 await Notificatiion.create({
-                    user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                    user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                     package_id: requests.package_id,
                     package_step_id: requests.package_step_id,
                     path: requests.path,
@@ -1416,7 +1460,7 @@ exports.updateStep2DocumentStatus = async (req, res) => {
             }
             else if (dataStep.length === 3) {
                 await Notificatiion.create({
-                    user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                    user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                     package_id: requests.package_id,
                     package_step_id: requests.package_step_id,
                     path: requests.path,
@@ -1539,6 +1583,9 @@ exports.insertUpdateDocumentStep3 = async (req, res) => {
                     `SELECT * FROM  package.trx_package_step_3 where package_step_id = '${requests.package_step_id}' and is_active = true`,
                     { type: db.sequelize.QueryTypes.SELECT });
 
+                let ppkAccount = await db.sequelize.query(
+                    `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 1`,
+                    { type: db.sequelize.QueryTypes.SELECT });
 
                 const data = await PackageStep3.create({
                     url_base64: requests.url_base64,
@@ -1556,7 +1603,7 @@ exports.insertUpdateDocumentStep3 = async (req, res) => {
 
                 if (dataStep.length === 0) {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -1632,7 +1679,8 @@ exports.getPackageStep3 = async (req, res) => {
                 document.document_name,
                 document.description,
                 document.created_date,
-                documentStatus.document_status_name
+                documentStatus.document_status_name,
+                document.created_by
                 FROM package.trx_package_step_3 document 
                 LEFT JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
                 where package_step_id = '${packageStepId}' and document.is_active = true`,
@@ -1698,9 +1746,15 @@ exports.updateStep3DocumentStatus = async (req, res) => {
                 }
             });
 
+            let pptkAccount = await db.sequelize.query(
+                `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 2`,
+                { type: db.sequelize.QueryTypes.SELECT });
+
+
+
 
             await Notificatiion.create({
-                user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                 package_id: requests.package_id,
                 package_step_id: requests.package_step_id,
                 path: requests.path,
@@ -1786,8 +1840,15 @@ exports.insertUpdateDocumentStep4 = async (req, res) => {
                 //     }
                 // });
 
+                let ppkAccount = await db.sequelize.query(
+                    `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 1`,
+                    { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
                 await Notificatiion.create({
-                    user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                    user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                     package_id: requests.package_id,
                     package_step_id: requests.package_step_id,
                     created_date: currentDateTime,
@@ -1868,6 +1929,14 @@ exports.updateDocumentStep4 = async (req, res) => {
                 }
             });
 
+            let pptkAccount = await db.sequelize.query(
+                `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 2`,
+                { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
+
             //penyedia
 
             await Notificatiion.create({
@@ -1885,7 +1954,7 @@ exports.updateDocumentStep4 = async (req, res) => {
                 });
 
             await Notificatiion.create({
-                user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                 package_id: requests.package_id,
                 package_step_id: requests.package_step_id,
                 created_date: currentDateTime,
@@ -1926,6 +1995,7 @@ exports.getPackageStep4 = async (req, res) => {
                 document.document_name,
                 document.description,
                 document.created_date,
+                document.created_by,
                 documentStatus.document_status_name
                 FROM package.trx_package_step_4 document 
                 INNER JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
@@ -2096,9 +2166,17 @@ exports.insertUpdateDocumentStep5 = async (req, res) => {
                         ]
                     });
 
+                let ppkAccount = await db.sequelize.query(
+                    `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 1`,
+                    { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
+
                 if (dataStep.length === 0) {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -2240,6 +2318,7 @@ exports.getPackageStep5 = async (req, res) => {
                 document.id,
                 document.document_name,
                 document.description,
+                document.created_by,
                 document.created_date,
                 documentStatus.document_status_name
                 FROM package.trx_package_step_5 document 
@@ -2353,8 +2432,14 @@ exports.insertUpdateDocumentStep6 = async (req, res) => {
                     });
 
                 if (dataStep.length === 0) {
+                    let ppkAccount = await db.sequelize.query(
+                        `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 1`,
+                        { type: db.sequelize.QueryTypes.SELECT });
+
+
+
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -2430,6 +2515,7 @@ exports.getPackageStep6 = async (req, res) => {
                 document.document_name,
                 document.description,
                 document.created_date,
+                document.created_by,
                 documentStatus.document_status_name
                 FROM package.trx_package_step_6 document 
                 LEFT JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
@@ -2497,6 +2583,11 @@ exports.updateDocumentStep6 = async (req, res) => {
                 }
             })
 
+            let pptkAccount = await db.sequelize.query(
+                `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 2`,
+                { type: db.sequelize.QueryTypes.SELECT });
+
+
             //penyedia
 
             await Notificatiion.create({
@@ -2514,7 +2605,7 @@ exports.updateDocumentStep6 = async (req, res) => {
                 });
 
             await Notificatiion.create({
-                user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                 package_id: requests.package_id,
                 package_step_id: requests.package_step_id,
                 created_date: currentDateTime,
@@ -2653,7 +2744,8 @@ exports.getPackageStep7 = async (req, res) => {
                 document.id,
                 document.document_name,
                 document.description,
-                document.created_date
+                document.created_date,
+                document.created_by
                 FROM package.trx_package_step_7 document 
                 where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
@@ -2745,10 +2837,16 @@ exports.insertUpdateDocumentStep8 = async (req, res) => {
                 //         id: requests.package_id
                 //     }
                 // });
+                let ppkAccount = await db.sequelize.query(
+                    `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 1`,
+                    { type: db.sequelize.QueryTypes.SELECT });
+
+
+
 
                 if (requests.document_type === "0") {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -2763,7 +2861,7 @@ exports.insertUpdateDocumentStep8 = async (req, res) => {
                 }
                 if (requests.document_type === "1") {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -2853,10 +2951,16 @@ exports.updateDocumentStep8 = async (req, res) => {
                     }
                 });
 
+                let pptkAccount = await db.sequelize.query(
+                    `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 2`,
+                    { type: db.sequelize.QueryTypes.SELECT });
+
+
+
 
 
                 await Notificatiion.create({
-                    user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                    user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                     package_id: requests.package_id,
                     package_step_id: requests.package_step_id,
                     created_date: currentDateTime,
@@ -2935,6 +3039,7 @@ exports.getPackageStep8 = async (req, res) => {
                 document.document_name,
                 document.description,
                 document.created_date,
+                document.created_by,
                 documentStatus.document_status_name
                 FROM package.trx_package_step_8 document 
                 INNER JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
@@ -3010,10 +3115,14 @@ exports.insertUpdateDocumentStep9 = async (req, res) => {
                         ]
                     });
 
+                let ppkAccount = await db.sequelize.query(
+                    `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 1`,
+                    { type: db.sequelize.QueryTypes.SELECT });
+
 
                 if (dataStep.length === 0) {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -3093,6 +3202,7 @@ exports.getPackageStep9 = async (req, res) => {
                 document.document_name,
                 document.description,
                 document.created_date,
+                document.created_by,
                 documentStatus.document_status_name
                 FROM package.trx_package_step_9 document 
                 left join package.ref_document_status documentStatus on document.document_status = documentStatus.id
@@ -3158,6 +3268,14 @@ exports.updateDocumentStep9 = async (req, res) => {
                 }
             });
 
+            let pptkAccount = await db.sequelize.query(
+                `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 2`,
+                { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
+
             await Notificatiion.create({
                 user_id: requests.provider_name,
                 package_id: requests.package_id,
@@ -3173,7 +3291,7 @@ exports.updateDocumentStep9 = async (req, res) => {
                 });
 
             await Notificatiion.create({
-                user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                 package_id: requests.package_id,
                 package_step_id: requests.package_step_id,
                 created_date: currentDateTime,
@@ -3393,7 +3511,8 @@ exports.getPackageStep10 = async (req, res) => {
                 document.id,
                 document.document_name,
                 document.description,
-                document.created_date
+                document.created_date,
+                document.created_by
                 FROM package.trx_package_step_10 document 
                   where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
@@ -3447,7 +3566,7 @@ exports.insertUpdateDocumentStep11 = async (req, res) => {
         let authResult = await helper.authenticateJWT(token);
         if (authResult.authenticated) {
             let currentDateTime = new Date();
-            
+
 
             if (requests.id === 0) {
                 const dataStep = await db.sequelize.query(
@@ -3468,10 +3587,17 @@ exports.insertUpdateDocumentStep11 = async (req, res) => {
                         ]
                     });
 
+                let ppkAccount = await db.sequelize.query(
+                    `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 1`,
+                    { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
 
                 if (dataStep.length === 0) {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -3577,6 +3703,7 @@ exports.getPackageStep11 = async (req, res) => {
                 document.document_name,
                 document.description,
                 document.created_date,
+                document.created_by,
                 documentStatus.document_status_name
                 FROM package.trx_package_step_11 document 
                 LEFT join package.ref_document_status documentStatus on document.document_status = documentStatus.id
@@ -3642,6 +3769,14 @@ exports.updateDocumentStep11 = async (req, res) => {
                 }
             });
 
+            let pptkAccount = await db.sequelize.query(
+                `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 2`,
+                { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
+
             await Notificatiion.create({
                 user_id: requests.provider_name,
                 package_id: requests.package_id,
@@ -3657,7 +3792,7 @@ exports.updateDocumentStep11 = async (req, res) => {
                 });
 
             await Notificatiion.create({
-                user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                 package_id: requests.package_id,
                 package_step_id: requests.package_step_id,
                 created_date: currentDateTime,
@@ -3706,7 +3841,7 @@ exports.insertUpdateDocumentStep12 = async (req, res) => {
                     start_date: requests.start_date,
                     end_date: requests.end_date,
                     document_number: requests.document_number,
-                    document_status: requests.document_type === "6" || requests.document_type === "7" ? "e0ae1282-b816-4b8b-9a68-7c77c44db7a6" : null
+                    document_status: requests.document_type === "7" ? "e0ae1282-b816-4b8b-9a68-7c77c44db7a6" : null
                 },
                     {
                         fields: ["url_base64", "document_name", "created_date", "created_by", "package_step_id", "description",
@@ -3715,13 +3850,48 @@ exports.insertUpdateDocumentStep12 = async (req, res) => {
                     });
 
                 if (requests.document_type === "6") {
+                    // await Notificatiion.create({
+                    //     user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                    //     package_id: requests.package_id,
+                    //     package_step_id: requests.package_step_id,
+                    //     created_date: currentDateTime,
+                    //     created_by: authResult.token_data.user_account_id,
+                    //     note: "Undangan Rapat SCM Telah Diupload ",
+                    //     path: requests.path
+                    // },
+                    //     {
+                    //         fields: ["user_id", "package_id", "note", "created_date", "created_by", "path", "package_step_id"
+                    //         ]
+                    //     });
+
+                    let ppkAccount = await db.sequelize.query(
+                        `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 1`,
+                        { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: requests.provider_name,
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
                         created_by: authResult.token_data.user_account_id,
-                        note: "Undangan Rapat SCM Telah Diupload ",
+                        note: "Undangan Rapat Pembuktian (SCM)",
+                        path: requests.path
+                    },
+                        {
+                            fields: ["user_id", "package_id", "note", "created_date", "created_by", "path", "package_step_id"
+                            ]
+                        });
+
+                    await Notificatiion.create({
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        package_id: requests.package_id,
+                        package_step_id: requests.package_step_id,
+                        created_date: currentDateTime,
+                        created_by: authResult.token_data.user_account_id,
+                        note: "Undangan Rapat Pembuktian(SCM)",
                         path: requests.path
                     },
                         {
@@ -3731,7 +3901,7 @@ exports.insertUpdateDocumentStep12 = async (req, res) => {
                 }
                 else if (requests.document_type === "7") {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -3884,6 +4054,13 @@ exports.updateDOcumentStep12 = async (req, res) => {
             });
 
 
+            let pptkAccount = await db.sequelize.query(
+                `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 2`,
+                { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
             if (requests.document_type === "6") {
                 await Notificatiion.create({
                     user_id: requests.provider_name,
@@ -3900,7 +4077,7 @@ exports.updateDOcumentStep12 = async (req, res) => {
                     });
 
                 await Notificatiion.create({
-                    user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                    user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                     package_id: requests.package_id,
                     package_step_id: requests.package_step_id,
                     created_date: currentDateTime,
@@ -3958,6 +4135,7 @@ exports.getPackageStep12 = async (req, res) => {
                 document.start_date,
                 document.end_date,
                 document.document_number,
+                document.created_by,
                  documentStatus.document_status_name
                 FROM package.trx_package_step_12 document 
                 LEFT JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
@@ -4212,7 +4390,8 @@ exports.getPackageStep13 = async (req, res) => {
                 document.id,
                 document.document_name,
                 document.description,
-                document.created_date
+                document.created_date,
+                document.created_by
                 FROM package.trx_package_step_13 document 
                  where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
@@ -4369,7 +4548,8 @@ exports.getPackageStep14 = async (req, res) => {
                 document.id,
                 document.document_name,
                 document.description,
-                document.created_date
+                document.created_date,
+                document.created_by
                 FROM package.trx_package_step_14 document 
                 where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
@@ -4601,7 +4781,8 @@ exports.getPackageStep15 = async (req, res) => {
                 document.id,
                 document.document_name,
                 document.description,
-                document.created_date
+                document.created_date,
+                document.created_by
                 FROM package.trx_package_step_15 document 
                 where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
@@ -4759,7 +4940,8 @@ exports.getPackageStep16 = async (req, res) => {
                 document.id,
                 document.document_name,
                 document.description,
-                document.created_date
+                document.created_date,
+                document.created_by
                 FROM package.trx_package_step_16 document 
                 where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
@@ -4915,7 +5097,8 @@ exports.getPackageStep17 = async (req, res) => {
                 document.id,
                 document.document_name,
                 document.description,
-                document.created_date
+                document.created_date,
+                document.created_by
                 FROM package.trx_package_step_17 document 
                 where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
@@ -5046,7 +5229,8 @@ exports.getPackageStep18 = async (req, res) => {
                 document.id,
                 document.document_name,
                 document.description,
-                document.created_date
+                document.created_date,
+                document.created_by
                 FROM package.trx_package_step_18 document 
                 where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
@@ -5262,7 +5446,8 @@ exports.getPackageStep19 = async (req, res) => {
                 document.id,
                 document.document_name,
                 document.description,
-                document.created_date
+                document.created_date,
+                document.created_by
                 FROM package.trx_package_step_19 document 
                 where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
@@ -5419,7 +5604,8 @@ exports.getPackageStep20 = async (req, res) => {
                 document.id,
                 document.document_name,
                 document.description,
-                document.created_date
+                document.created_date,
+                document.created_by
                 FROM package.trx_package_step_20 document 
                 where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
@@ -5495,9 +5681,16 @@ exports.insertUpdateDocumentStep21 = async (req, res) => {
                         ]
                     });
 
+                let ppkAccount = await db.sequelize.query(
+                    `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 1`,
+                    { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
                 if (dataStep.length === 0) {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -5511,7 +5704,7 @@ exports.insertUpdateDocumentStep21 = async (req, res) => {
                         });
                 } else if (dataStep.length === 1) {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -5629,9 +5822,17 @@ exports.updateDocumentStep21 = async (req, res) => {
                 }
             });
 
+            let pptkAccount = await db.sequelize.query(
+                `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 2`,
+                { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
+
             if (dataStep.length === 1) {
                 await Notificatiion.create({
-                    user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                    user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                     package_id: requests.package_id,
                     package_step_id: requests.package_step_id,
                     created_date: currentDateTime,
@@ -5659,7 +5860,7 @@ exports.updateDocumentStep21 = async (req, res) => {
                     });
 
                 await Notificatiion.create({
-                    user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                    user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                     package_id: requests.package_id,
                     package_step_id: requests.package_step_id,
                     created_date: currentDateTime,
@@ -5703,6 +5904,7 @@ exports.getPackageStep21 = async (req, res) => {
                 document.document_name,
                 document.description,
                 document.created_date,
+                document.created_by,
                 statusDocument.document_status_name
                 FROM package.trx_package_step_21 document
                 LEFT JOIN package.ref_document_status statusDocument on document.document_status = statusDocument.id
@@ -5830,7 +6032,7 @@ exports.insertUpdateDocumentStep22 = async (req, res) => {
                 //     });
 
                 res.send(helper.createResponseWrapper(data, 0));
-            }else {
+            } else {
                 await PackageStep22.update({
                     url_base64: requests.url_base64 ? requests.url_base64 : db.sequelize.literal(`url_base64`),
                     document_name: requests.document_name,
@@ -5956,7 +6158,8 @@ exports.getPackageStep22 = async (req, res) => {
                 document.id,
                 document.document_name,
                 document.description,
-                document.created_date
+                document.created_date,
+                document.created_by
                 FROM package.trx_package_step_22 document 
                 where package_step_id = '${packageStepId}' and document.is_active = true`,
                 { type: db.sequelize.QueryTypes.SELECT }
@@ -6068,9 +6271,16 @@ exports.insertUpdateDocumentStep23 = async (req, res) => {
                         ]
                     });
 
+                let ppkAccount = await db.sequelize.query(
+                    `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 1`,
+                    { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
                 if (dataStep.length === 0) {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -6084,7 +6294,7 @@ exports.insertUpdateDocumentStep23 = async (req, res) => {
                         });
                 } else if (dataStep.length === 1) {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -6101,7 +6311,7 @@ exports.insertUpdateDocumentStep23 = async (req, res) => {
 
                 if (requests.document_type === "1") {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -6157,7 +6367,8 @@ exports.getPackageStep23 = async (req, res) => {
                 document.document_name,
                 document.description,
                 document.created_date,
-                statusDocument.document_status_name
+                statusDocument.document_status_name,
+                document.created_by
                 FROM package.trx_package_step_23 document 
                 LEFT JOIN package.ref_document_status statusDocument on document.document_status = statusDocument.id
                 where package_step_id = '${packageStepId}' and document.is_active = true`,
@@ -6229,9 +6440,16 @@ exports.updateDocumentStep23 = async (req, res) => {
                 }
             });
 
+            let pptkAccount = await db.sequelize.query(
+                `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 2`,
+                { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
             if (dataStep.length === 1) {
                 await Notificatiion.create({
-                    user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                    user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                     package_id: requests.package_id,
                     package_step_id: requests.package_step_id,
                     created_date: currentDateTime,
@@ -6259,7 +6477,7 @@ exports.updateDocumentStep23 = async (req, res) => {
                     });
 
                 await Notificatiion.create({
-                    user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                    user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                     package_id: requests.package_id,
                     package_step_id: requests.package_step_id,
                     created_date: currentDateTime,
@@ -6359,9 +6577,16 @@ exports.insertUpdateDocumentStep24 = async (req, res) => {
                         ]
                     });
 
+                let ppkAccount = await db.sequelize.query(
+                    `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 1`,
+                    { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
                 if (dataStep.length === 0) {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -6443,7 +6668,8 @@ exports.getPackageStep24 = async (req, res) => {
                 document.document_name,
                 document.description,
                 document.created_date,
-                documentStatus.document_status_name
+                documentStatus.document_status_name,
+                document.created_by
                 FROM package.trx_package_step_24 document 
                 LEFT JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
                 where package_step_id = '${packageStepId}' and document.is_active = true`,
@@ -6509,11 +6735,18 @@ exports.updateStep24DocumentStatus = async (req, res) => {
                 }
             });
 
+            let pptkAccount = await db.sequelize.query(
+                `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 2`,
+                { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
 
 
 
             await Notificatiion.create({
-                user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                user_id: pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                 package_id: requests.package_id,
                 package_step_id: requests.package_step_id,
                 path: requests.path,
@@ -6579,9 +6812,16 @@ exports.insertUpdateDocumentStep25 = async (req, res) => {
                         ]
                     });
 
+                let ppkAccount = await db.sequelize.query(
+                    `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 1`,
+                    { type: db.sequelize.QueryTypes.SELECT });
+
+
+
+
                 if (dataStep.length === 0) {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -6597,7 +6837,7 @@ exports.insertUpdateDocumentStep25 = async (req, res) => {
                 }
                 if (dataStep.length === 1) {
                     await Notificatiion.create({
-                        user_id: "c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
+                        user_id: ppkAccount.length > 0 ? ppkAccount[0].id : null, //"c80a3f2d-b1a6-48ae-8e8b-e53d69b456cf",
                         package_id: requests.package_id,
                         package_step_id: requests.package_step_id,
                         created_date: currentDateTime,
@@ -6623,6 +6863,7 @@ exports.insertUpdateDocumentStep25 = async (req, res) => {
                     })
 
                     await Package.update({
+                        package_status: "0c6ac989-dcab-4154-972c-8d5a7306eae1",
                         updated_date: currentDateTime,
                         updated_by: authResult.token_data.user_account_id,
                         package_step: db.sequelize.literal('CASE WHEN package_step > 25 THEN package_step ELSE 25 END')
@@ -6704,7 +6945,8 @@ exports.getPackageStep25 = async (req, res) => {
                 document.document_name,
                 document.description,
                 document.created_date,
-                documentStatus.document_status_name
+                documentStatus.document_status_name,
+                document.created_by
                 FROM package.trx_package_step_25 document 
                 LEFT JOIN package.ref_document_status documentStatus on document.document_status = documentStatus.id
                 where package_step_id = '${packageStepId}' and document.is_active = true`,
@@ -6750,9 +6992,17 @@ exports.updateDocumentStep25 = async (req, res) => {
                 }
             });
 
+            let pptkAccount = await db.sequelize.query(
+                `Select id FROM package.ref_user_account where account_type = '${requests.account_type}' and user_role = 2`,
+                { type: db.sequelize.QueryTypes.SELECT });
+
+
+           
+
+
             if (dataStep.length === 1) {
                 await Notificatiion.create({
-                    user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                    user_id:  pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                     package_id: requests.package_id,
                     package_step_id: requests.package_step_id,
                     created_date: currentDateTime,
@@ -6780,7 +7030,7 @@ exports.updateDocumentStep25 = async (req, res) => {
                     });
 
                 await Notificatiion.create({
-                    user_id: "d95495df-44ee-4c0a-9e3d-762c33717c8a",
+                    user_id:  pptkAccount.length > 0 ? pptkAccount[0].id : null, //"d95495df-44ee-4c0a-9e3d-762c33717c8a",
                     package_id: requests.package_id,
                     package_step_id: requests.package_step_id,
                     created_date: currentDateTime,
@@ -6829,7 +7079,7 @@ exports.getPackageStep25ById = async (req, res) => {
             res.send(helper.createResponseWrapper([], 1, 98, "Authentication failed."));
         }
     }
-    catch (exception) { 
+    catch (exception) {
         console.log(exception);
         res.send(helper.createResponseWrapper([], 1, 99, "An error has occurred, please contact system administrator."));
     }
@@ -8199,16 +8449,21 @@ exports.getCountTotalPackage = async (req, res) => {
         const token = req.header("token");
         const authResult = await helper.authenticateJWT(token);
         const userRole = req.query.user_role;
-        let whereCondition = `Where package.is_active = true `;
+        const accountType = req.query.account_type
+        let whereCondition = `Where package.is_active = true  `;
 
         if (userRole === "4") {
             whereCondition += ` AND package.provider_name = '${authResult.token_data.user_account_id}'  `
+        }
+        else {
+            whereCondition += ` AND account.account_type = '${accountType}'  `
         }
         if (authResult.authenticated) {
             const results = await db.sequelize.query(
                 `Select 
                 count(package.id) AS "count" 
                 from package.ref_package as package
+                INNER JOIN package.ref_user_account account on package.created_by = account.id
                 ${whereCondition}
                 `
             );
@@ -8231,16 +8486,20 @@ exports.getCountTotalPackageInProgress = async (req, res) => {
         const token = req.header("token");
         const authResult = await helper.authenticateJWT(token);
         const userRole = req.query.user_role;
-        let whereCondition = `Where package_status = '4345861e-3dd1-49fe-9259-de30fbd142cf' and  is_active = true  `;
+        const accountType = req.query.account_type
+        let whereCondition = `Where package_status = '4345861e-3dd1-49fe-9259-de30fbd142cf' and  package.is_active = true  `;
 
         if (userRole === "4") {
             whereCondition += ` AND package.provider_name = '${authResult.token_data.user_account_id}'  `
+        } else {
+            whereCondition += ` AND account.account_type = '${accountType}'  `
         }
         if (authResult.authenticated) {
             const results = await db.sequelize.query(
                 `Select 
                 count(package.id) AS "count" 
                 from package.ref_package as package
+                INNER JOIN package.ref_user_account account on package.created_by = account.id
                 ${whereCondition}
                 `
             );
@@ -8264,16 +8523,20 @@ exports.getCountTotalPackageComplete = async (req, res) => {
         const token = req.header("token");
         const authResult = await helper.authenticateJWT(token);
         const userRole = req.query.user_role;
-        let whereCondition = `Where package_status = '0c6ac989-dcab-4154-972c-8d5a7306eae1' and  is_active = true  `;
+        const accountType = req.query.account_type
+        let whereCondition = `Where package_status = '0c6ac989-dcab-4154-972c-8d5a7306eae1' and  package.is_active = true   `;
 
         if (userRole === "4") {
             whereCondition += ` AND package.provider_name = '${authResult.token_data.user_account_id}'  `
+        } else {
+            whereCondition += ` AND account.account_type = '${accountType}' AND `
         }
         if (authResult.authenticated) {
             const results = await db.sequelize.query(
                 `Select 
                 count(package.id) AS "count" 
                 from package.ref_package as package
+                INNER JOIN package.ref_user_account account on package.created_by = account.id
                ${whereCondition}
                 `
             );
@@ -8679,6 +8942,7 @@ exports.findDetailPackage = async (req, res) => {
             let queryString = `SELECT 
             package.package_name,
             package.start_date,
+            package.end_date,
             package.created_date,
             package.id,
             package.package_step,
@@ -8695,11 +8959,13 @@ exports.findDetailPackage = async (req, res) => {
             package.ppk_name,
             documentStatus.document_status_name,
             userAccount.name as providerName,
-            packageStatus.status_name
+            packageStatus.status_name,
+            pptkAccount.account_type
             from package.ref_package package
             LEFT JOIN package.ref_document_status documentStatus on package.document_status  = documentStatus.id
             LEFT JOIN package.ref_user_account userAccount on package.provider_name = userAccount.id
             LEFT JOIN package.ref_package_status packageStatus on package.package_status = packageStatus.id
+            INNER JOIN package.ref_user_account pptkAccount on package.created_by = pptkAccount.id
             where package.id='${packageId}'`;
             const results = await db.sequelize.query(
                 queryString,

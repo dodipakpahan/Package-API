@@ -72,5 +72,6 @@ sequelize.authenticate()
     db.PackageStep32 = require("./PackageStep32.model")(sequelize, Sequelize);
     db.PackageStep33 = require("./PackageStep33.model")(sequelize, Sequelize);
     db.PackageStep34 = require("./PackageStep34.model")(sequelize, Sequelize);
+    db.AccountType = require("./AccountType.model")(sequelize, Sequelize);
 
     module.exports = db
